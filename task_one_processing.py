@@ -78,9 +78,6 @@ def process_one_regular_task_image(image_path, visualize=False):
     h_lines = get_table_horizontal_lines(feature_image)
     v_lines = get_table_vertical_lines(feature_image)
 
-    visualize = True
-
-
     if visualize:
         aux = template_image.copy()
 
@@ -108,17 +105,30 @@ def process_one_regular_task_image(image_path, visualize=False):
         plt.suptitle("Because the perspective transform worked so well, we can compute the hough lines only on the template image")
         plt.show()
 
-    patches = get_patches(h_lines, v_lines)
+    patches_matrix = get_patches(h_lines, v_lines)
 
     visualize = True
 
     if visualize:
         aux = template_image.copy()
 
-        for patch in patches:
-            cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
+        for line in patches_matrix:
+            for patch in line:
+                cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
         
-        show_image(aux)
+        plt.subplot(1, 2, 1)
+        plot_image(aux, title="Patches on template image")
+
+        aux = image.copy()
+
+        for line in patches_matrix:
+            for patch in line:
+                cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
+
+        plt.subplot(1, 2, 2)
+        plot_image(aux, title="Patches from template on the image of interest")
+
+        plt.show()
 
     exit()
 
@@ -197,16 +207,18 @@ def get_patches(h_lines, v_lines):
         y = slope_1 * x + b_1
         return int(x), int(y)
 
-    patch = list()
+    patches_matrix = list()
     for h_line1, h_line2 in zip(h_lines[:-1], h_lines[1:]):
+        line = list()
         for v_line1, v_line2 in zip(v_lines[:-1], v_lines[1:]):
 
             point_of_intersection_upper_left_corner = find_intersection_of_two_lines(h_line1, v_line1)
             point_of_intersection_down_right_corner = find_intersection_of_two_lines(h_line2, v_line2)
 
-            patch.append((point_of_intersection_upper_left_corner, point_of_intersection_down_right_corner))
+            line.append((point_of_intersection_upper_left_corner, point_of_intersection_down_right_corner))
+        patches_matrix.append(line)
 
-    return patch
+    return patches_matrix
 
 #TODO
 def hough_circles_dots_for_later(image):
