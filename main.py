@@ -2,16 +2,18 @@ import os
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from task_one_processing import process_one_regular_task_image
+from task_one_processing import process_one_game
 
 def main():
     submission_dir_path = "506_Ariton_Cosmin"
-    input_dir_path = os.path.join("train", "regular_tasks")
+    input_dir_path = "train"
 
     regular_tasks(submission_dir_path, input_dir_path, number_or_workers=5, visualize=True)
     
 
 def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False):
+
+    input_dir_path = os.path.join(input_dir_path, "regular_tasks")
 
     if not os.path.exists(submission_dir_path):
         os.mkdir(submission_dir_path)
@@ -20,17 +22,24 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
     if not os.path.exists(OUTPUT_DIR):
         os.mkdir(OUTPUT_DIR)
 
-    input_dir_path = input_dir_path
+    moves_filepaths = [os.path.join(input_dir_path, filename) for filename in os.listdir(input_dir_path) if "moves" in filename]
+    
+    game_info = list()
+    for move_file in moves_filepaths:
+        with open(move_file, "r") as f:
+            file = f.read()
 
-    image_names = [filename for filename in os.listdir(input_dir_path) if filename.split(".")[-1] == "jpg"]
-    image_paths = [os.path.join(input_dir_path, filename) for filename in image_names]
+            file = file.split("\n")
+            image_names = [line.split(" ")[0] for line in file if line != ""]
+            player_turns = [line.split(" ")[1] for line in file if line != ""]
 
-    #with Pool(number_or_workers) as p:
-    #    results = p.starmap(process_one_regular_task_image, zip(image_paths, [False for _ in image_paths]))
+            game_info.append((image_names, player_turns))
 
-    results = list(map(process_one_regular_task_image, image_paths, [False for _ in image_paths]))
 
-    #print(results)
+    with Pool(number_or_workers) as p:
+        results = p.starmap(process_one_game, zip(game_info, [visualize for _ in game_info]))
+
+    print(results)
 
 
 def bonus_task():

@@ -14,12 +14,37 @@ from data_manipulation.data_dumper import save_image
 from image_processing.image_stitching import stitch_image_inside
 from image_processing.background_extraction import extract_foreground_from_image
 import cv2
-    
+
+TEMPLATE_IMAGE_PATH = os.path.join("board+dominoes", "12.jpg")
+
+def process_one_game(game_info, visualize=False):
+    image_paths, player_turns = game_info
+
+    track_score = [1, 2, 3, 4, 5, 6, 0, 2, 5, 3, 4, 6, 2, 2, 0, 3,
+                    5, 4, 1, 6, 2, 4, 5, 5, 0, 6, 3, 4, 2, 0, 1, 5,
+                    1, 3, 4, 4, 4, 5, 0, 6, 3, 5, 4, 1, 3, 2, 0, 0,
+                    1, 1, 2, 3, 6, 3, 5, 2, 1, 0, 6, 6, 5, 2, 1, 2,
+                    5, 0, 3, 3, 5, 0, 6, 1, 4, 0, 6, 3, 5, 1, 4, 2,
+                    6, 2, 3, 1, 6, 5, 6, 2, 0, 4, 0, 1, 6, 4, 4, 1,
+                    6, 6, 3, 0]
+
+    players = {player : 0 for player in set(player_turns)}
+
+    template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
+
+    last_image = template_image
+    for image_path, player_turn in zip(image_paths, player_turns):
+        process_one_regular_task_image(image_path, )
+
+    return players
+
+    return 1
 
 
-def process_one_regular_task_image(image_path, visualize=False):
+
+def process_one_regular_task_image(image_path, last_image_path, visualize=False):
     image = cv2.imread(image_path)
-    template_image = cv2.imread(os.path.join("board+dominoes", "12.jpg"))
+    template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
 
     if visualize:
 
@@ -107,8 +132,6 @@ def process_one_regular_task_image(image_path, visualize=False):
 
     patches_matrix = get_patches(h_lines, v_lines)
 
-    visualize = True
-
     if visualize:
         aux = template_image.copy()
 
@@ -130,7 +153,43 @@ def process_one_regular_task_image(image_path, visualize=False):
 
         plt.show()
 
+    #show_image(get_patch_pixels(image, patches_matrix[0][0]))
+    #cv2.rectangle(template_image, patches_matrix[0][7][0], patches_matrix[0][7][1], color=MAGENTA, thickness=5)
+
+    foreground = extract_foreground_from_image(image, template_image)
+
+    patches_pixels_matrix_foreground =[[get_patch_pixels(foreground, patch) for patch in line] for line in patches_matrix]
+    
+
+    maximum_difference = -np.inf
+    m_d_i = -1
+    m_d_j = -1
+    second_maximum_difference = -np.inf
+    s_m_d_i = -1
+    s_m_d_j = -1
+
+    for i, line in enumerate(patches_pixels_matrix_foreground):
+        for j, patch in enumerate(line):
+            if np.mean(patch) > maximum_difference:
+                second_maximum_difference = maximum_difference
+                s_m_d_i = m_d_i
+                s_m_d_j = m_d_j
+                maximum_difference = np.mean(patch)
+                m_d_i = i
+                m_d_j = j
+
+    print(f"maximum diff:{maximum_difference} at {m_d_i}, {m_d_j}")
+    print(f"second_maximum_difference:{second_maximum_difference} at {s_m_d_i}, {s_m_d_j}")
+
     exit()
+
+
+def hardcoded_rotate_and_crop(image):
+    image = rotate_image(image, 0.12)
+    image = image[170:2870, 820:3505]
+    
+    return image
+
 
 
 
@@ -219,6 +278,11 @@ def get_patches(h_lines, v_lines):
         patches_matrix.append(line)
 
     return patches_matrix
+
+
+def get_patch_pixels(image, patch):
+    return image[patch[0][1] : patch[1][1], patch[0][0] : patch[1][0]]
+
 
 #TODO
 def hough_circles_dots_for_later(image):
