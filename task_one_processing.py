@@ -71,7 +71,7 @@ def process_one_regular_task_image(image_path, visualize=False):
         plt.show()
     
 
-    feature_image = get_feature_image(image)
+    feature_image = get_feature_image(template_image)
     if visualize:
         show_image(feature_image)
         
@@ -151,7 +151,7 @@ def get_table_horizontal_lines(feature_image):
         h_lines.append(((x1, y1), (x2, y2)))
 
     h_lines = hough.remove_close_lines(h_lines, 75, False)
-    #h_lines = h_lines[3:-1]
+    h_lines = h_lines[3:-1]
 
     return h_lines
 
@@ -176,7 +176,7 @@ def get_table_vertical_lines(feature_image):
         v_lines.append(((x1, y1), (x2, y2)))
 
     v_lines = hough.remove_close_lines(v_lines, 75, True)
-    #v_lines = v_lines[2:-1]
+    v_lines = v_lines[2:-1]
 
     return v_lines
 
