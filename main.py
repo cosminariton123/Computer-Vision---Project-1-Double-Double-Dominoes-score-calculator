@@ -8,7 +8,7 @@ def main():
     submission_dir_path = "506_Ariton_Cosmin"
     input_dir_path = "train"
 
-    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False)
+    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=5, visualize=False)
     
 
 def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False):
@@ -18,7 +18,7 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
     if not os.path.exists(submission_dir_path):
         os.mkdir(submission_dir_path)
 
-    OUTPUT_DIR = os.path.join(submission_dir_path, "regular_task")
+    OUTPUT_DIR = os.path.join(submission_dir_path, "regular_tasks")
     if not os.path.exists(OUTPUT_DIR):
         os.mkdir(OUTPUT_DIR)
 
@@ -35,13 +35,11 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
 
             game_info.append((image_paths, player_turns))
 
+    #with Pool(number_or_workers) as p:
+    #    p.starmap(process_one_game, zip([OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
-    with Pool(number_or_workers) as p:
-        results = p.starmap(process_one_game, zip(game_info, [visualize for _ in game_info]))
+    list(map(process_one_game, [OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
-    #results = list(map(process_one_game, game_info, [True for _ in game_info]))
-
-    print(results)
 
 
 def bonus_task():

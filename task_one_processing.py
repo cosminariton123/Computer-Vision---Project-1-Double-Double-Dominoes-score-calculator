@@ -17,10 +17,11 @@ import cv2
 
 TEMPLATE_IMAGE_PATH = os.path.join("board+dominoes", "12.jpg")
 
-def process_one_game(game_info, visualize=False):
+def process_one_game(output_dir, game_info, visualize=False):
     image_paths, player_turns = game_info
 
-    track_score = [1, 2, 3, 4, 5, 6, 0, 2, 5, 3, 4, 6, 2, 2, 0, 3,
+    #-1 is the starting position, meaning that the domino is outside the track
+    track_score = [-1, 1, 2, 3, 4, 5, 6, 0, 2, 5, 3, 4, 6, 2, 2, 0, 3,
                     5, 4, 1, 6, 2, 4, 5, 5, 0, 6, 3, 4, 2, 0, 1, 5,
                     1, 3, 4, 4, 4, 5, 0, 6, 3, 5, 4, 1, 3, 2, 0, 0,
                     1, 1, 2, 3, 6, 3, 5, 2, 1, 0, 6, 6, 5, 2, 1, 2,
@@ -28,52 +29,129 @@ def process_one_game(game_info, visualize=False):
                     6, 2, 3, 1, 6, 5, 6, 2, 0, 4, 0, 1, 6, 4, 4, 1,
                     6, 6, 3, 0]
 
+    domino_board = [
+                        [5, 0, 0, 4, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 5],
+                        [0, 0, 3, 0, 0, 4, 0, 0, 0, 4, 0, 0, 3, 0, 0],
+                        [0, 3, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0],
+                        [4, 0, 0, 3, 0, 2, 0, 0, 0, 2, 0, 3, 0, 0, 4],
+                        [0, 0, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 0, 0],
+                        [0, 4, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 4, 0],
+                        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                        [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
+                        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 4, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 4, 0],
+                        [0, 0, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 0, 0],
+                        [4, 0, 0, 3, 0, 2, 0, 0, 0, 2, 0, 3, 0, 0, 4],
+                        [0, 3, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0],
+                        [0, 0, 3, 0, 0, 4, 0, 0, 0, 4, 0, 0, 3, 0, 0],
+                        [5, 0, 0, 4, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 5]
+                    ]
+
+    rows_to_official_notation = {i : i + 1 for i in range(15)}
+    collumns_to_official_notation = {0 : "A", 1 : "B", 2 : "C", 3 : "D", 4 : "E", 5 : "F", 6 : "G", 7 : "H", 8 : "I",
+                                        9 : "J", 10 : "K", 11 : "L", 12 : "M", 13 : "N", 14 : "O"}
+
     players = {player : 0 for player in set(player_turns)}
 
     template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
     template_image = hardcoded_rotate_and_crop(template_image)
     h_lines, v_lines, patch_matrix = get_h_lines_v_lines_patch_matrix_from_template(template_image, visualize)
 
-    last_image = template_image
+    last_image_path = TEMPLATE_IMAGE_PATH
     for image_path, player_turn in zip(image_paths, player_turns):
-        result, last_image = process_new_domino(image_path, last_image_path, h_lines, v_lines, patch_matrix, visualize)
+        result = process_new_domino(image_path, last_image_path, h_lines, v_lines, patch_matrix, visualize)
+        last_image_path = image_path
 
-    return players
+        first_square, second_square = result
+        first_square_coordinates, first_square_dots = first_square
+        second_square_coordinates, second_square_dots = second_square
 
-    return 1
+        score = 0
+        
+        #Normal
+        score += domino_board[first_square_coordinates[0]][first_square_coordinates[1]]
+        score += domino_board[second_square_coordinates[0]][second_square_coordinates[1]]
+
+        if first_square_dots == second_square_dots:
+            score *= 2
+        
+        #bonus
+        for player in players:
+            if track_score[players[player]] == first_square_dots or track_score[players[player]] == second_square_dots:
+                players[player] += 3
+        
+        players[player_turn] += score
+
+        #Was already added in #bonus, now just incrementing for the output file
+        if track_score[players[player_turn]] == first_square_dots or track_score[players[player_turn]] == second_square_dots:
+            score += 3
+        
+        output_string = f"{rows_to_official_notation[first_square_coordinates[0]]}{collumns_to_official_notation[first_square_coordinates[1]]} {first_square_dots}\n"
+        output_string += f"{rows_to_official_notation[second_square_coordinates[0]]}{collumns_to_official_notation[second_square_coordinates[1]]} {second_square_dots}\n"
+        output_string += f"{score}"
+        
+        filename = os.path.basename(image_path).split(".")[0] + ".txt"
+        with open(os.path.join(output_dir, f"{filename}"), "w") as f:
+            f.write(output_string)
 
 
 
-def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix, visualize=False):
+def process_new_domino(image_path, last_image_path, h_lines, v_lines, patches_matrix, visualize=False):
     image = cv2.imread(image_path)
+    last_image = cv2.imread(last_image_path)
     template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
 
     if visualize:
 
-        plt.subplot(1, 3, 1)
+        #For image
+        plt.subplot(2, 3, 1)
         plot_image(template_image, title="template_image")
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(2, 3, 2)
         plot_image(image, title="image")
 
-        plt.subplot(1, 3, 3)
-        plot_image(image_overlaying(template_image, image), title="overlayed_with_template")
+        plt.subplot(2, 3, 3)
+        plot_image(image_overlaying(template_image, image), title="image overlayed_with_template")
 
-        plt.suptitle("Image not alligned with template")
+
+        #For last image
+        plt.subplot(2, 3, 4)
+        plot_image(template_image, title="template_image")
+
+        plt.subplot(2, 3, 5)
+        plot_image(last_image, title="last_image")
+
+        plt.subplot(2, 3, 6)
+        plot_image(image_overlaying(template_image, last_image), title="last image overlayed with template")
+
+
+        plt.suptitle("Images not alligned with template")
 
         plt.show()
 
     image = stitch_image_inside(image, template_image, k_used_for_knn=5, ratio=0.7, ransac_rep=5)
+    last_image = stitch_image_inside(last_image, template_image, k_used_for_knn=5, ratio=0.7, ransac_rep=5)
 
     if visualize:
-        plt.subplot(1, 3, 1)
+        #For image
+        plt.subplot(2, 3, 1)
         plot_image(template_image, title="template_image")
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(2, 3, 2)
         plot_image(image, title="image")
 
-        plt.subplot(1, 3, 3)
+        plt.subplot(2, 3, 3)
         plot_image(image_overlaying(template_image, image), title="overlayed_with_template")
+
+        #For last image
+        plt.subplot(2, 3, 4)
+        plot_image(template_image, title="template_image")
+
+        plt.subplot(2, 3, 5)
+        plot_image(last_image, title="last_image")
+
+        plt.subplot(2, 3, 6)
+        plot_image(image_overlaying(template_image, last_image), title="overlayed_with_template")
 
         plt.suptitle("Image alligned with template using sift features")
 
@@ -82,20 +160,30 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
 
     template_image = hardcoded_rotate_and_crop(template_image)
     image = hardcoded_rotate_and_crop(image)
+    last_image = hardcoded_rotate_and_crop(last_image)
 
     if visualize:
-        plt.subplot(1, 2, 1)
+        #For image
+        plt.subplot(2, 2, 1)
         plot_image(template_image, title="template_image")
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(2, 2, 2)
         plot_image(image, title="image")
 
-        plt.suptitle("Image and background manually vertically alligned and cropped")
+        #For last image
+        plt.subplot(2, 2, 3)
+        plot_image(template_image, title="template_image")
+
+        plt.subplot(2, 2, 4)
+        plot_image(last_image, title="last_image")
+
+        plt.suptitle("Image and template manually vertically alligned and cropped")
 
         plt.show()
     
 
     if visualize:
+        #For template
         aux = template_image.copy()
 
         for line in v_lines:
@@ -105,7 +193,10 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
             draw_line(aux, line[0], line[1], thickness=5)
 
         
-        plt.subplot(1, 2, 1)
+        plt.subplot(2, 2, 1)
+        plot_image(aux, title="Hough lines on template")
+
+        plt.subplot(2, 2, 3)
         plot_image(aux, title="Hough lines on template")
 
         aux = image.copy()
@@ -116,8 +207,21 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
         for line in h_lines:
             draw_line(aux, line[0], line[1], thickness=5)
 
-        plt.subplot(1, 2, 2)
+
+        #For image
+        plt.subplot(2, 2, 2)
         plot_image(aux, title="Hough lines from template overlayed on the image of interest")
+
+        #For last_image
+        aux = last_image.copy()
+        for line in v_lines:
+            draw_line(aux, line[0], line[1], thickness=5)
+
+        for line in h_lines:
+            draw_line(aux, line[0], line[1], thickness=5)
+
+        plt.subplot(2, 2, 4)
+        plot_image(aux, title="Hough lines from template overlayed on the last_image of interest")
 
         plt.suptitle("Because the perspective transform worked so well, we can compute the hough lines only on the template image")
         plt.show()
@@ -129,7 +233,10 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
             for patch in line:
                 cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
         
-        plt.subplot(1, 2, 1)
+        plt.subplot(2, 2, 1)
+        plot_image(aux, title="Patches on template image")
+
+        plt.subplot(2, 2, 3)
         plot_image(aux, title="Patches on template image")
 
         aux = image.copy()
@@ -138,11 +245,23 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
             for patch in line:
                 cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(2, 2, 2)
         plot_image(aux, title="Patches from template on the image of interest")
+
+        #For last_image
+        aux = last_image.copy()
+
+        for line in patches_matrix:
+            for patch in line:
+                cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
+
+        plt.subplot(2, 2, 4)
+        plot_image(aux, title="Patches from template on the last_image of interest")
 
         plt.suptitle("Same for patches")
         plt.show()
+
+
 
     foreground = extract_foreground_from_image(image, last_image)
     if visualize:
@@ -236,9 +355,9 @@ def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix,
         plt.show()
 
     if m_d_i < s_m_d_i or m_d_j < s_m_d_j:
-        return ((m_d_i, m_d_j, len(circles_m_d)), (s_m_d_i, s_m_d_j, len(circles_s_m_d))), image
+        return (((m_d_i, m_d_j), min(len(circles_m_d), 6)), ((s_m_d_i, s_m_d_j), min(len(circles_s_m_d), 6)))
     else:
-        return ((s_m_d_i, s_m_d_j, len(circles_s_m_d)), (m_d_i, m_d_j, len(circles_m_d))), image
+        return (((s_m_d_i, s_m_d_j), min(len(circles_s_m_d), 6)), ((m_d_i, m_d_j), min(len(circles_m_d), 6)))
 
 
 def hardcoded_rotate_and_crop(image):
