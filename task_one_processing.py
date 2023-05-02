@@ -59,42 +59,59 @@ def process_one_game(output_dir, game_info, visualize=False):
 
     last_image_path = TEMPLATE_IMAGE_PATH
     for image_path, player_turn in zip(image_paths, player_turns):
-        result = process_new_domino(image_path, last_image_path, h_lines, v_lines, patch_matrix, visualize)
-        last_image_path = image_path
+        try:
+            result = process_new_domino(image_path, last_image_path, h_lines, v_lines, patch_matrix, visualize)
+            last_image_path = image_path
 
-        first_square, second_square = result
-        first_square_coordinates, first_square_dots = first_square
-        second_square_coordinates, second_square_dots = second_square
+            first_square, second_square = result
+            first_square_coordinates, first_square_dots = first_square
+            second_square_coordinates, second_square_dots = second_square
 
-        score = 0
-        
-        #Normal
-        score += domino_board[first_square_coordinates[0]][first_square_coordinates[1]]
-        score += domino_board[second_square_coordinates[0]][second_square_coordinates[1]]
+            score = 0
+            
+            #Normal
+            score += domino_board[first_square_coordinates[0]][first_square_coordinates[1]]
+            score += domino_board[second_square_coordinates[0]][second_square_coordinates[1]]
 
-        if first_square_dots == second_square_dots:
-            score *= 2
-        
-        #bonus
-        for player in players:
-            if track_score[players[player]] == first_square_dots or track_score[players[player]] == second_square_dots:
-                players[player] += 3
-        
-        players[player_turn] += score
+            if first_square_dots == second_square_dots:
+                score *= 2
+            
 
-        #Was already added in #bonus, now just incrementing for the output file
-        if track_score[players[player_turn]] == first_square_dots or track_score[players[player_turn]] == second_square_dots:
-            score += 3
-        
-        output_string = f"{rows_to_official_notation[first_square_coordinates[0]]}{collumns_to_official_notation[first_square_coordinates[1]]} {first_square_dots}\n"
-        output_string += f"{rows_to_official_notation[second_square_coordinates[0]]}{collumns_to_official_notation[second_square_coordinates[1]]} {second_square_dots}\n"
-        output_string += f"{score}"
-        
-        filename = os.path.basename(image_path).split(".")[0] + ".txt"
-        with open(os.path.join(output_dir, f"{filename}"), "w") as f:
-            f.write(output_string)
+            flag_score = False
+            #Updating the score for the output file
+            if track_score[players[player_turn]] == first_square_dots or track_score[players[player_turn]] == second_square_dots:
+                flag_score = True
 
+            #bonus for all players, now we add the 3
+            for player in players:
+                if track_score[players[player]] == first_square_dots or track_score[players[player]] == second_square_dots:
+                    players[player] += 3
 
+            #bonus will be incremented later
+            players[player_turn] += score
+
+            #Updating the score for the output file, the in memory score is already updated
+            if flag_score == True:
+                score += 3
+            
+            output_string = f"{rows_to_official_notation[first_square_coordinates[0]]}{collumns_to_official_notation[first_square_coordinates[1]]} {first_square_dots}\n"
+            output_string += f"{rows_to_official_notation[second_square_coordinates[0]]}{collumns_to_official_notation[second_square_coordinates[1]]} {second_square_dots}\n"
+            output_string += f"{score}"
+            
+            filename = os.path.basename(image_path).split(".")[0] + ".txt"
+            with open(os.path.join(output_dir, f"{filename}"), "w") as f:
+                f.write(output_string)
+
+        #Something very bad happend, output a random file and move to the next
+        except:
+            last_image_path = image_path
+            output_string = f"{rows_to_official_notation[0]}{collumns_to_official_notation[0]} {0}\n"
+            output_string += f"{rows_to_official_notation[0]}{collumns_to_official_notation[0]} {0}\n"
+            output_string += f"{0}"
+            
+            filename = os.path.basename(image_path).split(".")[0] + ".txt"
+            with open(os.path.join(output_dir, f"{filename}"), "w") as f:
+                f.write(output_string)
 
 def process_new_domino(image_path, last_image_path, h_lines, v_lines, patches_matrix, visualize=False):
     image = cv2.imread(image_path)

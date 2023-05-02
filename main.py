@@ -35,10 +35,10 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
 
             game_info.append((image_paths, player_turns))
 
-    #with Pool(number_or_workers) as p:
-    #    p.starmap(process_one_game, zip([OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
+    with Pool(number_or_workers) as p:
+        p.starmap(process_one_game, zip([OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
-    list(map(process_one_game, [OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
+    #list(map(process_one_game, [OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
 
 
