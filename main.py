@@ -7,12 +7,13 @@ from bonus_task_processing import process_one_image
 def main():
     submission_dir_path = "506_Ariton_Cosmin"
     input_dir_path = "train"
+    number_of_workers = 5
 
-    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=5, visualize=False)
+    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=number_of_workers, visualize=False)
 
     print("\n ##################BONUS_TASK######################### \n")
 
-    bonus_task(submission_dir_path, input_dir_path, number_or_workers=5, visualize=False)
+    bonus_task(submission_dir_path, input_dir_path, number_or_workers=number_of_workers, visualize=False)
     
 
 def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False):
@@ -39,9 +40,12 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
 
             game_info.append((image_paths, player_turns))
 
+
+    #Comment the following 2 lines if having problems with multiprocessing
     with Pool(number_or_workers) as p:
         p.starmap(process_one_game, zip([OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
+    #Uncomment the following line if having problems with multiprocessing
     #list(map(process_one_game, [OUTPUT_DIR for _ in game_info], game_info, [visualize for _ in game_info]))
 
 
@@ -59,9 +63,11 @@ def bonus_task(submission_dir_path, input_dir_path, number_or_workers=1, visuali
 
     image_paths = [os.path.join(input_dir_path, filepath) for filepath in os.listdir(input_dir_path) if "jpg" in filepath]
 
+    #Comment the following 2 lines if having problems with multiprocessing
     with Pool(number_or_workers) as p:
         p.starmap(process_one_image, zip([OUTPUT_DIR for _ in image_paths], image_paths, [visualize for _ in image_paths]))
 
+    #Uncomment the following line if having problems with multiprocessing
     #list(map(process_one_image, [OUTPUT_DIR for _ in image_paths], image_paths, [visualize for _ in image_paths]))
 
 
