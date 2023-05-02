@@ -8,7 +8,7 @@ def main():
     submission_dir_path = "506_Ariton_Cosmin"
     input_dir_path = "train"
 
-    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=5, visualize=True)
+    regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False)
     
 
 def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visualize=False):
@@ -30,14 +30,16 @@ def regular_tasks(submission_dir_path, input_dir_path, number_or_workers=1, visu
             file = f.read()
 
             file = file.split("\n")
-            image_names = [line.split(" ")[0] for line in file if line != ""]
+            image_paths = [os.path.join(input_dir_path, line.split(" ")[0]) for line in file if line != ""]
             player_turns = [line.split(" ")[1] for line in file if line != ""]
 
-            game_info.append((image_names, player_turns))
+            game_info.append((image_paths, player_turns))
 
 
     with Pool(number_or_workers) as p:
         results = p.starmap(process_one_game, zip(game_info, [visualize for _ in game_info]))
+
+    #results = list(map(process_one_game, game_info, [True for _ in game_info]))
 
     print(results)
 

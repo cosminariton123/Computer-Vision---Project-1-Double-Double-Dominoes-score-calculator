@@ -31,10 +31,12 @@ def process_one_game(game_info, visualize=False):
     players = {player : 0 for player in set(player_turns)}
 
     template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
+    template_image = hardcoded_rotate_and_crop(template_image)
+    h_lines, v_lines, patch_matrix = get_h_lines_v_lines_patch_matrix_from_template(template_image, visualize)
 
     last_image = template_image
     for image_path, player_turn in zip(image_paths, player_turns):
-        process_one_regular_task_image(image_path, )
+        result, last_image = process_new_domino(image_path, last_image_path, h_lines, v_lines, patch_matrix, visualize)
 
     return players
 
@@ -42,7 +44,7 @@ def process_one_game(game_info, visualize=False):
 
 
 
-def process_one_regular_task_image(image_path, last_image_path, visualize=False):
+def process_new_domino(image_path, last_image, h_lines, v_lines, patches_matrix, visualize=False):
     image = cv2.imread(image_path)
     template_image = cv2.imread(TEMPLATE_IMAGE_PATH)
 
@@ -78,11 +80,8 @@ def process_one_regular_task_image(image_path, last_image_path, visualize=False)
         plt.show()
 
 
-    template_image = rotate_image(template_image, 0.12)
-    template_image = template_image[170:2870, 820:3505]
-
-    image = rotate_image(image, 0.12)
-    image = image[170:2870, 820:3505]
+    template_image = hardcoded_rotate_and_crop(template_image)
+    image = hardcoded_rotate_and_crop(image)
 
     if visualize:
         plt.subplot(1, 2, 1)
@@ -95,13 +94,6 @@ def process_one_regular_task_image(image_path, last_image_path, visualize=False)
 
         plt.show()
     
-
-    feature_image = get_feature_image(template_image)
-    if visualize:
-        show_image(feature_image)
-        
-    h_lines = get_table_horizontal_lines(feature_image)
-    v_lines = get_table_vertical_lines(feature_image)
 
     if visualize:
         aux = template_image.copy()
@@ -130,8 +122,6 @@ def process_one_regular_task_image(image_path, last_image_path, visualize=False)
         plt.suptitle("Because the perspective transform worked so well, we can compute the hough lines only on the template image")
         plt.show()
 
-    patches_matrix = get_patches(h_lines, v_lines)
-
     if visualize:
         aux = template_image.copy()
 
@@ -151,37 +141,104 @@ def process_one_regular_task_image(image_path, last_image_path, visualize=False)
         plt.subplot(1, 2, 2)
         plot_image(aux, title="Patches from template on the image of interest")
 
+        plt.suptitle("Same for patches")
         plt.show()
 
-    #show_image(get_patch_pixels(image, patches_matrix[0][0]))
-    #cv2.rectangle(template_image, patches_matrix[0][7][0], patches_matrix[0][7][1], color=MAGENTA, thickness=5)
-
-    foreground = extract_foreground_from_image(image, template_image)
+    foreground = extract_foreground_from_image(image, last_image)
+    if visualize:
+        show_image(foreground, title="Difference between last image and current image")
 
     patches_pixels_matrix_foreground =[[get_patch_pixels(foreground, patch) for patch in line] for line in patches_matrix]
     
-
-    maximum_difference = -np.inf
+    maximum_difference_patch = -np.inf
     m_d_i = -1
     m_d_j = -1
-    second_maximum_difference = -np.inf
-    s_m_d_i = -1
-    s_m_d_j = -1
 
     for i, line in enumerate(patches_pixels_matrix_foreground):
         for j, patch in enumerate(line):
-            if np.mean(patch) > maximum_difference:
-                second_maximum_difference = maximum_difference
-                s_m_d_i = m_d_i
-                s_m_d_j = m_d_j
-                maximum_difference = np.mean(patch)
+            if np.mean(patch) > maximum_difference_patch:
+                maximum_difference_patch = np.mean(patch)
                 m_d_i = i
                 m_d_j = j
+    
 
-    print(f"maximum diff:{maximum_difference} at {m_d_i}, {m_d_j}")
-    print(f"second_maximum_difference:{second_maximum_difference} at {s_m_d_i}, {s_m_d_j}")
+    s_m_d_i = -1
+    s_m_d_j = -1
+    second_maximum_difference_adjacent = -np.inf
 
-    exit()
+    if m_d_i > 0:
+        this_patch_mean = np.mean(patches_pixels_matrix_foreground[m_d_i - 1][m_d_j])
+        if this_patch_mean > second_maximum_difference_adjacent:
+            second_maximum_difference_adjacent =this_patch_mean
+            s_m_d_i = m_d_i - 1
+            s_m_d_j = m_d_j
+    if m_d_i < len(patches_pixels_matrix_foreground) - 1:
+        this_patch_mean = np.mean(patches_pixels_matrix_foreground[m_d_i + 1][m_d_j])
+        if this_patch_mean > second_maximum_difference_adjacent:
+            second_maximum_difference_adjacent = this_patch_mean
+            s_m_d_i = m_d_i + 1
+            s_m_d_j = m_d_j
+    if m_d_j > 0:
+        this_patch_mean = np.mean(patches_pixels_matrix_foreground[m_d_i][m_d_j - 1])
+        if this_patch_mean > second_maximum_difference_adjacent:
+            second_maximum_difference_adjacent = this_patch_mean
+            s_m_d_i = m_d_i
+            s_m_d_j = m_d_j - 1
+    if m_d_j < len(patches_pixels_matrix_foreground[0]) - 1:
+        this_patch_mean = np.mean(patches_pixels_matrix_foreground[m_d_i][m_d_j + 1])
+        if this_patch_mean > second_maximum_difference_adjacent:
+            second_maximum_difference_adjacent = this_patch_mean
+            s_m_d_i = m_d_i
+            s_m_d_j = m_d_j + 1
+
+
+    if visualize:
+        aux = image.copy()
+
+        print(f"maximum diff:{maximum_difference_patch} at {m_d_i}, {m_d_j}")
+        print(f"second_maximum_diff:{second_maximum_difference_adjacent} at {s_m_d_i}, {s_m_d_j}")
+        print()
+        cv2.rectangle(aux, patches_matrix[m_d_i][m_d_j][0], patches_matrix[m_d_i][m_d_j][1], color=BLUE, thickness=5)
+        cv2.rectangle(aux, patches_matrix[s_m_d_i][s_m_d_j][0], patches_matrix[s_m_d_i][s_m_d_j][1], color=RED, thickness=5)
+
+        show_image(aux, title="The two sides of the domino detected")
+
+    m_d_patch = get_patch_pixels(image, patches_matrix[m_d_i][m_d_j])
+    s_m_d_patch = get_patch_pixels(image, patches_matrix[s_m_d_i][s_m_d_j])
+
+    circles_m_d = hough_circles_get_dots(m_d_patch)
+    circles_s_m_d = hough_circles_get_dots(s_m_d_patch)
+
+    if visualize:
+        for circle in circles_m_d:
+            draw_circle(m_d_patch, circle)
+        
+        for circle in circles_s_m_d:
+            draw_circle(s_m_d_patch, circle)
+        
+        print(f"maximum diff nr of circles: {len(circles_m_d)}")
+        print(f"second_maximum_diff nr of circles: {len(circles_s_m_d)}")
+        print("\n##################################\n")
+
+        order = None
+        if m_d_i < s_m_d_i or m_d_j < s_m_d_j:
+            order = [1, 2]
+        else:
+            order = [2, 1]
+
+        plt.subplot(abs(m_d_i - s_m_d_i) + 1, abs(m_d_j - s_m_d_j) + 1, order[0])
+        plot_image(m_d_patch, title=f"Maximum diff patch, nr of circles: {len(circles_m_d)}")
+
+        plt.subplot(abs(m_d_i - s_m_d_i) + 1, abs(m_d_j - s_m_d_j) + 1, order[1])
+        plot_image(s_m_d_patch, title=f"Second max diff patch, nr of circles: {len(circles_s_m_d)}")
+
+        plt.suptitle("Detecting domino dots using Hough Circles")
+        plt.show()
+
+    if m_d_i < s_m_d_i or m_d_j < s_m_d_j:
+        return ((m_d_i, m_d_j, len(circles_m_d)), (s_m_d_i, s_m_d_j, len(circles_s_m_d))), image
+    else:
+        return ((s_m_d_i, s_m_d_j, len(circles_s_m_d)), (m_d_i, m_d_j, len(circles_m_d))), image
 
 
 def hardcoded_rotate_and_crop(image):
@@ -189,6 +246,39 @@ def hardcoded_rotate_and_crop(image):
     image = image[170:2870, 820:3505]
     
     return image
+
+
+def get_h_lines_v_lines_patch_matrix_from_template(template_image, visualize=False):
+
+    feature_image = get_feature_image(template_image)
+    if visualize:
+        show_image(feature_image, title="Image -> Grayscale Image -> Median Filter -> Canny")
+
+    h_lines = get_table_horizontal_lines(feature_image)
+    v_lines = get_table_vertical_lines(feature_image)
+    if visualize:
+        aux = template_image.copy()
+
+        for line in v_lines:
+            draw_line(aux, line[0], line[1], thickness=5)
+
+        for line in h_lines:
+            draw_line(aux, line[0], line[1], thickness=5)
+        
+        show_image(aux, title="Vertical and horisontal hough lines with overlap removal\nand removal of other uninteresting lines")
+
+    patches_matrix = get_patches(h_lines, v_lines)
+
+    if visualize:
+        aux = template_image.copy()
+
+        for line in patches_matrix:
+            for patch in line:
+                cv2.rectangle(aux, patch[0], patch[1], color=MAGENTA, thickness=5)
+        
+        show_image(aux, title="Patches computed from intersection of hough lines")
+
+    return h_lines, v_lines, patches_matrix
 
 
 
@@ -284,12 +374,12 @@ def get_patch_pixels(image, patch):
     return image[patch[0][1] : patch[1][1], patch[0][0] : patch[1][0]]
 
 
-#TODO
-def hough_circles_dots_for_later(image):
-    image_gray = get_grayscale_image(image)
+def hough_circles_get_dots(patch):
+    image_gray = get_grayscale_image(patch)
     circles = cv2.HoughCircles(image_gray, cv2.HOUGH_GRADIENT, 1, minDist=10, minRadius=10, maxRadius=20, param1=150, param2=30)
-    circles = circles[0]
+    
+    if circles is not None:
+        circles = circles[0]
+        return circles
 
-    for circle in circles:
-        draw_circle(image, circle)
-
+    return []
