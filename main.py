@@ -6,7 +6,7 @@ from bonus_task_processing import process_one_image
 
 def main():
     submission_dir_path = "506_Ariton_Cosmin"
-    input_dir_path = "train"
+    input_dir_path = "test"
     number_of_workers = 5
 
     regular_tasks(submission_dir_path, input_dir_path, number_or_workers=number_of_workers, visualize=False)
