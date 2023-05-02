@@ -103,7 +103,9 @@ def process_one_game(output_dir, game_info, visualize=False):
                 f.write(output_string)
 
         #Something very bad happend, output a random file and move to the next
-        except:
+        except Exception as e:
+            print(f"Warning:\n{str(e)}\n Error occured at {os.path.basename(image_path)}. Tune sift to allow more freedom!!!\n\n")
+
             last_image_path = image_path
             output_string = f"{rows_to_official_notation[0]}{collumns_to_official_notation[0]} {0}\n"
             output_string += f"{rows_to_official_notation[0]}{collumns_to_official_notation[0]} {0}\n"
@@ -146,8 +148,8 @@ def process_new_domino(image_path, last_image_path, h_lines, v_lines, patches_ma
 
         plt.show()
 
-    image = stitch_image_inside(image, template_image, k_used_for_knn=5, ratio=0.7, ransac_rep=5)
-    last_image = stitch_image_inside(last_image, template_image, k_used_for_knn=5, ratio=0.7, ransac_rep=5)
+    image = stitch_image_inside(image, template_image, k_used_for_knn=11, ratio=0.35, ransac_rep=4)
+    last_image = stitch_image_inside(last_image, template_image, k_used_for_knn=11, ratio=0.35, ransac_rep=4)
 
     if visualize:
         #For image
