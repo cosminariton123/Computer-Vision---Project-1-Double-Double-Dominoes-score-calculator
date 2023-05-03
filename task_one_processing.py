@@ -514,7 +514,7 @@ def get_patch_pixels(image, patch):
 
 def hough_circles_get_dots(patch):
     image_gray = get_grayscale_image(patch)
-    circles = cv2.HoughCircles(image_gray, cv2.HOUGH_GRADIENT, 1, minDist=10, minRadius=10, maxRadius=20, param1=150, param2=30)
+    circles = cv2.HoughCircles(image_gray, cv2.HOUGH_GRADIENT, 1, minDist=10, minRadius=10, maxRadius=20, param1=150, param2=20)
     
     if circles is not None:
         circles = circles[0]
