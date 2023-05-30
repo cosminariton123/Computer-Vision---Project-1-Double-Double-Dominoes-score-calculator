@@ -6,6 +6,7 @@ All the libraries required are in "requirement.txt" file. They are not here to p
 2. how to run your solution and where to look for the output file.
 
 script: main.py
+train and test data present at https://tinyurl.com/CV-2023-Project1
 "board+dominoes" directory is expected to exist.
 Furthermore, "boards+dominoes" should have the same images as the ones provided.
 All files should be the same format as the ones provided for training(including file extentions).
