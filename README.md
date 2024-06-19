@@ -1,3 +1,17 @@
+# Project presentation
+
+![Page 1](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0001.jpg)
+![Page 2](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0002.jpg)
+![Page 3](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0003.jpg)
+![Page 4](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0004.jpg)
+![Page 5](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0005.jpg)
+![Page 6](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0006.jpg)
+![Page 7](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0007.jpg)
+![Page 8](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0008.jpg)
+![Page 9](506_Ariton_Cosmin_pdf_images/506_Ariton_Cosmin_Computer-Vision_2023_pages-to-jpg-0009.jpg)
+
+# Info about how to run project
+
 1. the libraries required to run the project including the full version of each library
 
 python 3.10.10 was used
@@ -18,15 +32,15 @@ function main() to run regular_tasks() and bonus_task()
 function regular_tasks() to run all regular tasks solvers.
 function bonus_task() to run the bonus task solver
 
-For the sake of time, I used multiprocessing to enable a faster execution. If this is unwanted for some reason, set "number_of_workers" to 1 or follow the instruction in the comments in "main.py" 
+For the sake of time, I used multiprocessing to enable a faster execution. If this is unwanted for some reason, set "number_of_workers" to 1 or follow the instruction in the comments in "main.py"
 "number_of_workers" should be lower or equal than number of games in regular_tasks
 
-Output will be "506_Ariton_Cosmin" in the root directory. Subdirectory regular_tasks will contain the outputs of the regular_tasks and subdirectory bonus_task will contain the output of bonus task. Obviously, the directories will appear only if the corresponding functions will be run. 
+Output will be "506_Ariton_Cosmin" in the root directory. Subdirectory regular_tasks will contain the outputs of the regular_tasks and subdirectory bonus_task will contain the output of bonus task. Obviously, the directories will appear only if the corresponding functions will be run.
 The output files will be simmillar to the ones in "evaluation" or "train"
 
 I must also state that I consider "evaluation.py" to be incorectly developed, as:
 For Regular tasks:
--it only evaluates games 1 to 4  range(1, 5) => [1, 2, 3, 4], not [1, 2, 3, 4, 5]
+-it only evaluates games 1 to 4 range(1, 5) => [1, 2, 3, 4], not [1, 2, 3, 4, 5]
 -"Points values" is always "0.015", so even if I provide incorect values, I get maximum points
 
 For Bonus task:
